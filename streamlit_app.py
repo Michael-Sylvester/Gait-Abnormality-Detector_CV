@@ -307,12 +307,19 @@ def normalize_keypoints(kpts: np.ndarray) -> np.ndarray:
 # ─────────────────────────────────────────────
 # Video Processing
 # ─────────────────────────────────────────────
-def process_video(video_path: str, pose_model, progress_bar, status_text):
+def process_video(video_path: str, pose_model, progress_bar, status_text, occlusion_vis: bool):
     cap    = cv2.VideoCapture(video_path)
     total  = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps    = cap.get(cv2.CAP_PROP_FPS) or 30.0
 
-    frames_rgb   = []   # for display
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    
+    # We use VP80 / WebM as it provides the most robust native playback in browsers
+    out_path = tempfile.NamedTemporaryFile(delete=False, suffix='.webm').name
+    fourcc = cv2.VideoWriter_fourcc(*'VP80')
+    out_video = cv2.VideoWriter(out_path, fourcc, fps, (w, h))
+
     keypoints_all = []  # (T, 17, 3)
 
     frame_idx = 0
@@ -339,13 +346,14 @@ def process_video(video_path: str, pose_model, progress_bar, status_text):
                 kpts_frame = kp_np[:17]
 
                 # Draw skeleton
-                frame_rgb = draw_skeleton(frame_rgb, kpts_frame, occlusion_mode=False)
+                        frame_rgb = draw_skeleton(frame_rgb, kpts_frame, occlusion_mode=occlusion_vis)
 
-        frames_rgb.append(frame_rgb)
+        out_video.write(cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR))
         keypoints_all.append(kpts_frame)
 
     cap.release()
-    return frames_rgb, np.array(keypoints_all), fps
+    out_video.release()
+    return out_path, np.array(keypoints_all), fps
 
 def draw_skeleton(img: np.ndarray, kpts: np.ndarray,
                   occlusion_mode=False, conf_threshold=0.3) -> np.ndarray:
@@ -691,29 +699,19 @@ if uploaded:
         classifier = None
 
     # ── Process video
-    frames_rgb, kpts_raw, fps = process_video(
-        tmp_path, pose_model, progress_bar, status_text
+    out_video_path, kpts_raw, fps = process_video(
+        tmp_path, pose_model, progress_bar, status_text, occlusion_vis
     )
     progress_bar.empty()
 
     # Normalize keypoints
     kpts_norm = normalize_keypoints(kpts_raw)
 
-    # ── Display skeleton frames as a video strip (first / middle / last)
-    T = len(frames_rgb)
-    preview_idx = [0, T//4, T//2, 3*T//4, T-1] if T > 4 else list(range(T))
-    preview_frames = [frames_rgb[i] for i in preview_idx if i < T]
-
+    # ── Display reconstructed video
     with col_left:
-        # Annotate with occlusion if enabled
-        if occlusion_vis and T > 0:
-            occ_frames = [draw_skeleton(frames_rgb[i], kpts_raw[i], occlusion_mode=True)
-                          for i in preview_idx if i < T]
-            st.image(occ_frames[:5], caption=[f"Frame {i}" for i in preview_idx[:5]],
-                     use_container_width=True)
-        else:
-            st.image(preview_frames[:5], caption=[f"Frame {i}" for i in preview_idx[:5]],
-                     use_container_width=True)
+        with open(out_video_path, "rb") as f:
+            video_bytes = f.read()
+        st.video(video_bytes)
         if occlusion_vis:
             st.markdown("""
             <div style='font-family:DM Mono,monospace;font-size:0.72rem;color:#64748b;
@@ -800,9 +798,10 @@ if uploaded:
         st.plotly_chart(fig_c, use_container_width=True)
 
     # ── Memory cleanup
-    del frames_rgb
     gc.collect()
     os.unlink(tmp_path)
+    if os.path.exists(out_video_path):
+        os.unlink(out_video_path)
 
 else:
     # Landing state
