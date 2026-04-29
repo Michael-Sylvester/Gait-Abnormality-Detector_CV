@@ -443,13 +443,17 @@ def run_inference(model, kpts_norm: np.ndarray, model_choice: str, status_text):
     """
     device  = torch.device("cpu")
     T       = kpts_norm.shape[0]
-    in_ch   = 2 if "Ablation" in model_choice else 3
+    # 1D-CNN Baseline must use 2 channels (XY) to meet its 34-channel expectation
+    in_ch   = 2 if ("Ablation" in model_choice or "1D-CNN" in model_choice) else 3
 
-    # Build full tensor: (C, T, 17, 1)
+    # Build full tensor: (C, T, 17)
     seq = kpts_norm[:, :, :in_ch]   # (T, 17, C)
     seq = seq.transpose(2, 0, 1)    # (C, T, 17)
-    seq = seq[:, :, :, np.newaxis]  # (C, T, 17, 1)
-    x   = torch.tensor(seq, dtype=torch.float32).unsqueeze(0).to(device)  # (1,C,T,17,1)
+    x   = torch.tensor(seq, dtype=torch.float32).unsqueeze(0).to(device)  # (1, C, T, 17)
+
+    # Create mask: (1, T) representing per-frame mean confidence
+    frame_conf = kpts_norm[:, :, 2].mean(axis=1) # (T,)
+    mask = torch.tensor(frame_conf, dtype=torch.float32).unsqueeze(0).to(device) # (1, T)
 
     # Sliding window for temporal probabilities
     WIN    = min(64, T)
@@ -461,24 +465,26 @@ def run_inference(model, kpts_norm: np.ndarray, model_choice: str, status_text):
             status_text.text("🧠 Running graph neural network inference …")
 
         if model_choice == "1D-CNN Baseline":
-            # 1D-CNN expects (B, C, T*17)
-            flat = x.squeeze(-1).view(1, in_ch, -1)
-            logits = model(flat)
+            # 1D-CNN expects (B, C*17, T)
+            flat = x.view(1, in_ch * 17, T)
+            logits = model(flat, mask)
         else:
-            logits = model(x)
+            # ST-GCN expects (B, C, T, 17)
+            logits = model(x, mask)
 
         prob = F.softmax(logits, dim=1)[0, 1].item()
 
         # Temporal sliding window
         for start in range(0, T - WIN + 1, STRIDE):
-            chunk = seq[:, start:start+WIN, :, :]
-            cx    = torch.tensor(chunk[np.newaxis], dtype=torch.float32).to(device)
+            chunk = seq[:, start:start+WIN, :]
+            cx    = torch.tensor(chunk, dtype=torch.float32).unsqueeze(0).to(device)
+            chunk_mask = mask[:, start:start+WIN]
             with torch.no_grad():
                 if model_choice == "1D-CNN Baseline":
-                    flat2  = cx.squeeze(-1).view(1, in_ch, -1)
-                    logits2 = model(flat2)
+                    flat2  = cx.view(1, in_ch * 17, WIN)
+                    logits2 = model(flat2, chunk_mask)
                 else:
-                    logits2 = model(cx)
+                    logits2 = model(cx, chunk_mask)
                 p2 = F.softmax(logits2, dim=1)[0, 1].item()
             probs_t.append((start + WIN // 2, p2))
 
