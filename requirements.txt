@@ -5,3 +5,4 @@ ultralytics>=8.1.0
 opencv-python-headless>=4.9.0
 plotly>=5.20.0
 numpy>=1.26.0
+gdown
