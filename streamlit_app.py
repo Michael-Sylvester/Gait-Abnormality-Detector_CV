@@ -444,6 +444,7 @@ def run_inference(model, kpts_norm: np.ndarray, model_choice: str, status_text):
     device  = torch.device("cpu")
     T       = kpts_norm.shape[0]
     # 1D-CNN Baseline must use 2 channels (XY) to meet its 34-channel expectation
+    # 1D-CNN Baseline must use 2 channels (XY) to meet its 34-channel expectation
     in_ch   = 2 if ("Ablation" in model_choice or "1D-CNN" in model_choice) else 3
 
     # Build full tensor: (C, T, 17)
@@ -466,7 +467,7 @@ def run_inference(model, kpts_norm: np.ndarray, model_choice: str, status_text):
 
         if model_choice == "1D-CNN Baseline":
             # 1D-CNN expects (B, C*17, T)
-            flat = x.view(1, in_ch * 17, T)
+            flat = x.reshape(1, in_ch * 17, T)
             logits = model(flat, mask)
         else:
             # ST-GCN expects (B, C, T, 17)
@@ -481,7 +482,7 @@ def run_inference(model, kpts_norm: np.ndarray, model_choice: str, status_text):
             chunk_mask = mask[:, start:start+WIN]
             with torch.no_grad():
                 if model_choice == "1D-CNN Baseline":
-                    flat2  = cx.view(1, in_ch * 17, WIN)
+                    flat2  = cx.reshape(1, in_ch * 17, WIN)
                     logits2 = model(flat2, chunk_mask)
                 else:
                     logits2 = model(cx, chunk_mask)
