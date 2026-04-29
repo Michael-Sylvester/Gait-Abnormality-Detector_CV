@@ -200,6 +200,7 @@ def load_module(name, path):
     """Dynamically load a Python module from a file path."""
     spec = importlib.util.spec_from_file_location(name, path)
     mod  = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
     spec.loader.exec_module(mod)
     return mod
 
