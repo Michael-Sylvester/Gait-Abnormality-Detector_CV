@@ -346,7 +346,7 @@ def process_video(video_path: str, pose_model, progress_bar, status_text, occlus
                 kpts_frame = kp_np[:17]
 
                 # Draw skeleton
-                        frame_rgb = draw_skeleton(frame_rgb, kpts_frame, occlusion_mode=occlusion_vis)
+                frame_rgb = draw_skeleton(frame_rgb, kpts_frame, occlusion_mode=occlusion_vis)
 
         out_video.write(cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR))
         keypoints_all.append(kpts_frame)
