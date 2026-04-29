@@ -196,11 +196,6 @@ JOINT_NAMES = [
 # ─────────────────────────────────────────────
 # Model Loading Utilities
 # ─────────────────────────────────────────────
-# Add the external repository to sys.path so its internal imports (like 'src' or 'stgcn') can resolve
-REPO_PATH = os.path.abspath("gavd-keypoint-extraction-main")
-if REPO_PATH not in sys.path:
-    sys.path.insert(0, REPO_PATH)
-
 def load_module(name, path):
     """Dynamically load a Python module from a file path."""
     spec = importlib.util.spec_from_file_location(name, path)
@@ -233,9 +228,9 @@ def load_classifier(model_choice: str):
     device = torch.device("cpu")
     try:
         if model_choice == "ST-GCN (Primary)":
-            ckpt_path  = "gavd-keypoint-extraction-main/stgcn/runs/best_model.pt"
-            model_path = "gavd-keypoint-extraction-main/stgcn/model.py"
-            graph_path = "gavd-keypoint-extraction-main/stgcn/graph.py"
+            ckpt_path  = "stgcn/runs/best_model.pt"
+            model_path = "stgcn/model.py"
+            graph_path = "stgcn/graph.py"
             
             ensure_gdrive_model("1VMWo1N41NxXkKS9B2eq3KsWrjxa6e-2P", ckpt_path)
             # https://drive.google.com/file/d/1VMWo1N41NxXkKS9B2eq3KsWrjxa6e-2P/view?usp=drive_link
@@ -255,8 +250,8 @@ def load_classifier(model_choice: str):
             return model, None
 
         elif model_choice == "1D-CNN Baseline":
-            ckpt_path  = "gavd-keypoint-extraction-main/baseline/runs/best_model.pt"
-            model_path = "gavd-keypoint-extraction-main/baseline/model.py"
+            ckpt_path  = "baseline/runs/best_model.pt"
+            model_path = "baseline/model.py"
             
             ensure_gdrive_model("1uujrcmsdYsq91TGnize1NuQdpg1BInX-", ckpt_path)
             # https://drive.google.com/file/d/1uujrcmsdYsq91TGnize1NuQdpg1BInX-/view?usp=drive_link
@@ -271,8 +266,8 @@ def load_classifier(model_choice: str):
             return model, None
 
         elif model_choice == "Ablation (XY only)":
-            ckpt_path  = "gavd-keypoint-extraction-main/stgcn/runs/ablation/best_model.pt"
-            model_path = "gavd-keypoint-extraction-main/stgcn/model.py"
+            ckpt_path  = "stgcn/runs/ablation/best_model.pt"
+            model_path = "stgcn/model.py"
             
             ensure_gdrive_model("1ya3NdQ-iqXmMlhBDt6W_GHLrKTVJ8VLO", ckpt_path)
             # https://drive.google.com/file/d/1ya3NdQ-iqXmMlhBDt6W_GHLrKTVJ8VLO/view?usp=drive_link
