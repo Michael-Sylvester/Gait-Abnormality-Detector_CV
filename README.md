@@ -37,10 +37,10 @@ streamlit run app.py
 ## Model Requirements
 
 ### ST-GCN (`stgcn/model.py`)
-Must expose `ST_GCN(in_channels, num_class, graph_args, edge_importance_weighting)`.
+Must expose `STGCN(in_channels, num_classes, dropout)`.
 
 ### Graph (`stgcn/graph.py`)
-Must expose `Graph(layout, strategy)`.
+Must expose `build_adjacency(num_joints, edges, root)`.
 
 ### 1D-CNN Baseline (`baseline/model.py`)
 Must expose `GaitCNN()` accepting input shape `(B, C, T*17)`.

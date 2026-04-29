@@ -13,7 +13,9 @@ import tempfile
 import os
 import gc
 import sys
-import importlib.util
+# Direct imports for models as requested
+from stgcn.model import STGCN
+from stgcn.graph import build_adjacency
 from pathlib import Path
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -194,16 +196,8 @@ JOINT_NAMES = [
 ]
 
 # ─────────────────────────────────────────────
-# Model Loading Utilities
+# Model Loading Utilities (excluding dynamic module loading for STGCN/Graph)
 # ─────────────────────────────────────────────
-def load_module(name, path):
-    """Dynamically load a Python module from a file path."""
-    spec = importlib.util.spec_from_file_location(name, path)
-    mod  = importlib.util.module_from_spec(spec)
-    sys.modules[name] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
 def ensure_gdrive_model(file_id: str, output_path: str):
     """Downloads a model from Google Drive if it doesn't exist locally."""
     if not os.path.exists(output_path) and file_id:
@@ -238,12 +232,9 @@ def load_classifier(model_choice: str):
             
             if not (os.path.exists(ckpt_path) and os.path.exists(model_path)):
                 return None, "ST-GCN weights not found. Check Google Drive ID or place best_model.pt in gavd-keypoint-extraction-main/stgcn/runs/"
-            graph_mod  = load_module("graph", graph_path)
-            model_mod  = load_module("stgcn_model", model_path)
-            graph      = graph_mod.Graph()
-            model      = model_mod.ST_GCN(
-                in_channels=3, num_class=2, graph_args={"layout":"coco","strategy":"spatial"},
-                edge_importance_weighting=True
+            # STGCN class internally calls build_adjacency
+            model      = STGCN(
+                in_channels=3, num_classes=2
             ).to(device)
             ckpt = torch.load(ckpt_path, map_location=device)
             model.load_state_dict(ckpt.get("model_state_dict", ckpt))
@@ -259,8 +250,9 @@ def load_classifier(model_choice: str):
             
             if not (os.path.exists(ckpt_path) and os.path.exists(model_path)):
                 return None, "1D-CNN weights not found. Check Google Drive ID or place best_model.pt in gavd-keypoint-extraction-main/baseline/runs/"
-            model_mod  = load_module("cnn_model", model_path)
-            model      = model_mod.GaitCNN().to(device)
+            # Assuming baseline/model.py exists and defines GaitCNN
+            from baseline.model import GaitCNN
+            model      = GaitCNN().to(device)
             ckpt = torch.load(ckpt_path, map_location=device)
             model.load_state_dict(ckpt.get("model_state_dict", ckpt))
             model.eval()
@@ -275,10 +267,9 @@ def load_classifier(model_choice: str):
             
             if not (os.path.exists(ckpt_path) and os.path.exists(model_path)):
                 return None, "Ablation weights not found. Check Google Drive ID or place best_model.pt in gavd-keypoint-extraction-main/stgcn/runs/ablation/"
-            model_mod  = load_module("stgcn_model_abl", model_path)
-            model      = model_mod.ST_GCN(
-                in_channels=2, num_class=2, graph_args={"layout":"coco","strategy":"spatial"},
-                edge_importance_weighting=True
+            # STGCN class internally calls build_adjacency
+            model      = STGCN(
+                in_channels=2, num_classes=2
             ).to(device)
             ckpt = torch.load(ckpt_path, map_location=device)
             model.load_state_dict(ckpt.get("model_state_dict", ckpt))
