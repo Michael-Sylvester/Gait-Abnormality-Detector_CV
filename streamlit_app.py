@@ -203,6 +203,14 @@ def load_module(name, path):
     spec.loader.exec_module(mod)
     return mod
 
+def ensure_gdrive_model(file_id: str, output_path: str):
+    """Downloads a model from Google Drive if it doesn't exist locally."""
+    if not os.path.exists(output_path) and file_id:
+        import gdown
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        url = f'https://drive.google.com/uc?id={file_id}'
+        gdown.download(url, output_path, quiet=False)
+
 @st.cache_resource(show_spinner=False)
 def load_pose_model():
     try:
@@ -223,8 +231,13 @@ def load_classifier(model_choice: str):
             ckpt_path  = "stgcn/runs/best_model.pt"
             model_path = "stgcn/model.py"
             graph_path = "stgcn/graph.py"
+            
+            ensure_gdrive_model("1VMWo1N41NxXkKS9B2eq3KsWrjxa6e", ckpt_path)
+            # https://drive.google.com/file/d/1VMWo1N41NxXkKS9B2eq3KsWrjxa6e/view?usp=drive_link
+            
             if not (os.path.exists(ckpt_path) and os.path.exists(model_path)):
                 return None, "ST-GCN weights not found. Place best_model.pt in stgcn/runs/"
+                return None, "ST-GCN weights not found. Check Google Drive ID or place best_model.pt in stgcn/runs/"
             graph_mod  = load_module("graph", graph_path)
             model_mod  = load_module("stgcn_model", model_path)
             graph      = graph_mod.Graph()
@@ -240,8 +253,13 @@ def load_classifier(model_choice: str):
         elif model_choice == "1D-CNN Baseline":
             ckpt_path  = "baseline/runs/best_model.pt"
             model_path = "baseline/model.py"
+            
+            ensure_gdrive_model("1uujrcmsdYsq91TGnize1NuQdpg1BInX", ckpt_path)
+            # https://drive.google.com/file/d/1uujrcmsdYsq91TGnize1NuQdpg1BInX/view?usp=drive_link
+            
             if not (os.path.exists(ckpt_path) and os.path.exists(model_path)):
                 return None, "1D-CNN weights not found. Place best_model.pt in baseline/runs/"
+                return None, "1D-CNN weights not found. Check Google Drive ID or place best_model.pt in baseline/runs/"
             model_mod  = load_module("cnn_model", model_path)
             model      = model_mod.GaitCNN().to(device)
             ckpt = torch.load(ckpt_path, map_location=device)
@@ -252,8 +270,13 @@ def load_classifier(model_choice: str):
         elif model_choice == "Ablation (XY only)":
             ckpt_path  = "stgcn/runs/ablation/best_model.pt"
             model_path = "stgcn/model.py"
+            
+            ensure_gdrive_model("1ya3NdQ-iqXmMlhBDt6W_GHLrKTVJ8VLO", ckpt_path)
+            # https://drive.google.com/file/d/1ya3NdQ-iqXmMlhBDt6W_GHLrKTVJ8VLO/view?usp=drive_link
+            
             if not (os.path.exists(ckpt_path) and os.path.exists(model_path)):
                 return None, "Ablation weights not found. Place best_model.pt in stgcn/runs/ablation/"
+                return None, "Ablation weights not found. Check Google Drive ID or place best_model.pt in stgcn/runs/ablation/"
             model_mod  = load_module("stgcn_model_abl", model_path)
             model      = model_mod.ST_GCN(
                 in_channels=2, num_class=2, graph_args={"layout":"coco","strategy":"spatial"},
