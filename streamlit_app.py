@@ -232,8 +232,8 @@ def load_classifier(model_choice: str):
             model_path = "stgcn/model.py"
             graph_path = "stgcn/graph.py"
             
-            ensure_gdrive_model("1VMWo1N41NxXkKS9B2eq3KsWrjxa6e", ckpt_path)
-            # https://drive.google.com/file/d/1VMWo1N41NxXkKS9B2eq3KsWrjxa6e/view?usp=drive_link
+            ensure_gdrive_model("1VMWo1N41NxXkKS9B2eq3KsWrjxa6e-2P", ckpt_path)
+            # https://drive.google.com/file/d/1VMWo1N41NxXkKS9B2eq3KsWrjxa6e-2P/view?usp=drive_link
             
             if not (os.path.exists(ckpt_path) and os.path.exists(model_path)):
                 return None, "ST-GCN weights not found. Place best_model.pt in stgcn/runs/"
@@ -254,8 +254,8 @@ def load_classifier(model_choice: str):
             ckpt_path  = "baseline/runs/best_model.pt"
             model_path = "baseline/model.py"
             
-            ensure_gdrive_model("1uujrcmsdYsq91TGnize1NuQdpg1BInX", ckpt_path)
-            # https://drive.google.com/file/d/1uujrcmsdYsq91TGnize1NuQdpg1BInX/view?usp=drive_link
+            ensure_gdrive_model("1uujrcmsdYsq91TGnize1NuQdpg1BInX-", ckpt_path)
+            # https://drive.google.com/file/d/1uujrcmsdYsq91TGnize1NuQdpg1BInX-/view?usp=drive_link
             
             if not (os.path.exists(ckpt_path) and os.path.exists(model_path)):
                 return None, "1D-CNN weights not found. Place best_model.pt in baseline/runs/"
