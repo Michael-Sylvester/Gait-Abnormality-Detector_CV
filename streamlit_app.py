@@ -196,6 +196,11 @@ JOINT_NAMES = [
 # ─────────────────────────────────────────────
 # Model Loading Utilities
 # ─────────────────────────────────────────────
+# Add the external repository to sys.path so its internal imports (like 'src' or 'stgcn') can resolve
+REPO_PATH = os.path.abspath("gavd-keypoint-extraction-main")
+if REPO_PATH not in sys.path:
+    sys.path.insert(0, REPO_PATH)
+
 def load_module(name, path):
     """Dynamically load a Python module from a file path."""
     spec = importlib.util.spec_from_file_location(name, path)
