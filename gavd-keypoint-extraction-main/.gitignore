@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.python-version
+
+# Pose model (auto-downloaded on first run, ~50 MB)
+yolov8*.pt
+*.pt
+
+# Data — the dataset is large and license-restricted; not committed
+data/videos/
+data/keypoints/
+data/gavd-meta/
+
+# Sample overlays (regenerate from src.verify if needed)
+samples/*.mp4
+
+# IDE / OS / agent state
+.DS_Store
+.vscode/
+.idea/
+.claude/
+
+# Logs
+*.log
