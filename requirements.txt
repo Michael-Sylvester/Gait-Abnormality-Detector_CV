@@ -1,5 +1,7 @@
-streamlit
-modal>=0.64.0
-plotly>=5.22.0
+streamlit>=1.35.0
+torch>=2.1.0
+torchvision>=0.16.0
+ultralytics>=8.1.0
+opencv-python-headless>=4.9.0
+plotly>=5.20.0
 numpy>=1.26.0
-scipy>=1.13.0

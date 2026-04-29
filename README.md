@@ -1,115 +1,76 @@
-# GaitVision — ST-GCN Gait Analysis
+# GaitSense — Gait Abnormality Detection
 **ICS555: Computer Vision · Ashesi University**
 
-> Classify walking videos as **Normal** or **Abnormal** using  
-> YOLOv8-Pose → Spatio-Temporal Graph Convolutional Networks (ST-GCN)  
-> on the GAVD dataset (1,874 sequences).
+> ST-GCN-powered gait classification on the GAVD dataset.  
+> **AUC: 0.899 · Macro F1: 0.661**
 
 ---
 
-## Architecture
-
-```
-Raw Video
-  └─► YOLOv8n-Pose  ──► COCO-17 keypoints [T × 17 × 3]
-        └─► Hip-centred normalisation
-              └─► ST-GCN / 1D-CNN / Ablation model
-                    └─► Normal / Abnormal + per-frame probabilities
-```
-
-**Model Results (GAVD Test Set)**
-
-| Model | AUC-ROC | Macro F1 |
-|---|---|---|
-| ST-GCN (Main) | **0.899** | **0.661** |
-| 1D-CNN Baseline | 0.761 | 0.512 |
-| Channel Ablation (XY only) | 0.843 | 0.598 |
-
----
-
-## Deployment
-
-### 1 — Backend (your teammate's action)
-
-```bash
-# Install Modal CLI
-pip install modal
-
-# Authenticate
-modal token new
-
-# Deploy the inference endpoint
-modal deploy modal_inference.py
-```
-
-The Modal app will be reachable as `gait-analysis`.  
-Your teammate should share their `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` with you.
-
-### 2 — Frontend (Streamlit Cloud)
-
-1. Push this repo to GitHub.
-2. Connect the repo at [share.streamlit.io](https://share.streamlit.io).
-3. Set the main file to `app.py`.
-4. In **Settings → Secrets**, add:
-
-```toml
-MODAL_TOKEN_ID     = "ak-..."
-MODAL_TOKEN_SECRET = "as-..."
-```
-
-### 3 — Local development
+## Quick Start
 
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Enable **Demo Mode** in the sidebar to test without Modal credentials.
-
----
-
-## Project Structure
+## Expected Directory Layout
 
 ```
 .
-├── app.py                  # Streamlit frontend (main entry point)
-├── modal_inference.py      # Modal backend (deploy with `modal deploy`)
-├── src/
-│   └── skeleton.py         # COCO-17 edges + adjacency matrix builder
-├── stgcn/
-│   ├── model.py            # ST-GCN architecture
-│   ├── graph.py            # Graph topology helper
-│   └── runs/
-│       ├── best_model.pt
-│       └── ablation/
-│           └── best_model.pt
-├── baseline/
-│   ├── model.py            # 1D-CNN architecture
-│   └── runs/
-│       └── best_model.pt
+├── app.py
 ├── requirements.txt
-└── .streamlit/
-    ├── config.toml         # Dark medical theme
-    └── secrets.toml        # ← DO NOT COMMIT WITH REAL KEYS
+├── .streamlit/
+│   └── config.toml
+├── stgcn/
+│   ├── model.py          # ST_GCN class
+│   ├── graph.py          # Graph class
+│   └── runs/
+│       ├── best_model.pt          # Primary ST-GCN weights
+│       └── ablation/
+│           └── best_model.pt      # Ablation (XY only, in_channels=2)
+└── baseline/
+    ├── model.py          # GaitCNN class
+    └── runs/
+        └── best_model.pt          # 1D-CNN baseline weights
 ```
 
+## Model Requirements
+
+### ST-GCN (`stgcn/model.py`)
+Must expose `ST_GCN(in_channels, num_class, graph_args, edge_importance_weighting)`.
+
+### Graph (`stgcn/graph.py`)
+Must expose `Graph(layout, strategy)`.
+
+### 1D-CNN Baseline (`baseline/model.py`)
+Must expose `GaitCNN()` accepting input shape `(B, C, T*17)`.
+
+## Pipeline
+
+```
+Video → YOLOv8n-pose (CPU) → COCO-17 keypoints (T×17×3)
+      → Hip-center + torso-scale normalization
+      → Tensor (1, C, T, 17, 1)
+      → ST-GCN forward pass
+      → Softmax → P(Abnormal) vs threshold τ=0.85
+```
+
+## UI Features
+
+| Feature | Description |
+|---|---|
+| Dual-view dashboard | Skeleton overlay + temporal probability chart |
+| Model switcher | ST-GCN / 1D-CNN / Ablation via sidebar |
+| Occlusion Visualizer | Joint color by confidence (red→green) |
+| Gait Metrics | Cadence, Step Symmetry Index |
+| Joint Confidence Chart | Per-joint average confidence bar chart |
+
+## Deployment Notes
+
+- All inference runs on **CPU** — no GPU required.
+- Memory: frames are cleared after processing to stay under Streamlit Cloud's ~1 GB limit.
+- Upload limit: 200 MB (set in `.streamlit/config.toml`).
+- `opencv-python-headless` is used (no display server needed).
+
 ---
-
-## Presentation Tips (Technical Depth — 60% of grade)
-
-1. **Live model switching**: Switch from ST-GCN → 1D-CNN during the demo to show the  
-   AUC gap (0.899 vs 0.761) in real time on the same video.
-2. **Occlusion Sensitivity toggle**: Enables the confidence-channel colour overlay,  
-   directly demonstrating the ablation study finding that Channel 3 (confidence) provides  
-   meaningful signal beyond pure geometry.
-3. **Probability timeseries chart**: Point to the frame-level fluctuations to explain  
-   the sliding-window inference strategy.
-
----
-
-## Citations
-
-- **GAVD Dataset**: MV-TGCN — https://github.com/niais/mv-tgcn
-- **ST-GCN**: Yan et al. (2018) — *Spatial Temporal Graph Convolutional Networks for Skeleton-Based Action Recognition*
-- **YOLOv8-Pose**: Ultralytics — https://docs.ultralytics.com/tasks/pose/
-- **Modal Serverless Inference**: https://modal.com
+*GAVD Dataset · 1,874 sequences · Normal / Abnormal classification*
