@@ -408,27 +408,34 @@ def compute_gait_metrics(kpts: np.ndarray, fps: float) -> dict:
     l_conf    = kpts[:, 15, 2].mean()
     r_conf    = kpts[:, 16, 2].mean()
 
-    def count_steps(signal):
-        """Count peaks in a 1-D signal (simple threshold crossing)."""
+    def get_step_peaks(signal):
+        """Return frame indices of peaks in a 1-D signal."""
         if signal.std() < 1:
-            return 0
+            return []
         sig_norm = (signal - signal.mean()) / (signal.std() + 1e-6)
-        peaks = 0
+        peaks = []
         for i in range(1, len(sig_norm)-1):
             if sig_norm[i] > 0.5 and sig_norm[i] > sig_norm[i-1] and sig_norm[i] > sig_norm[i+1]:
-                peaks += 1
+                peaks.append(i)
         return peaks
 
-    l_steps = count_steps(l_ankle_y) if l_conf > 0.3 else 0
-    r_steps = count_steps(r_ankle_y) if r_conf > 0.3 else 0
+    l_peaks = get_step_peaks(l_ankle_y) if l_conf > 0.3 else []
+    r_peaks = get_step_peaks(r_ankle_y) if r_conf > 0.3 else []
+
+    l_steps = len(l_peaks)
+    r_steps = len(r_peaks)
     total_steps  = l_steps + r_steps
     duration_min = T / fps / 60
     cadence      = round(total_steps / (duration_min + 1e-6))
     cadence      = min(cadence, 200)   # sanity cap
 
     sym_ratio = "N/A"
-    if l_steps > 0 and r_steps > 0:
-        sym_ratio = f"{min(l_steps, r_steps) / max(l_steps, r_steps):.3f}"
+    # Temporal Symmetry Index based on average stride duration (frames between consecutive peaks)
+    if len(l_peaks) > 1 and len(r_peaks) > 1:
+        l_stride_avg = np.mean(np.diff(l_peaks))
+        r_stride_avg = np.mean(np.diff(r_peaks))
+        if max(l_stride_avg, r_stride_avg) > 0:
+            sym_ratio = f"{min(l_stride_avg, r_stride_avg) / max(l_stride_avg, r_stride_avg):.3f}"
 
     avg_conf = kpts[:, :, 2].mean()
 
