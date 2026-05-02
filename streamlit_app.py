@@ -181,6 +181,7 @@ stButton > button {
 # ─────────────────────────────────────────────
 COCO_EDGES = [
     (0, 1), (0, 2), (1, 3), (2, 4),          # head
+    (0, 5), (0, 6),                          # nose to shoulders (ST-GCN custom connections)
     (5, 6),                                    # shoulders
     (5, 7), (7, 9),                            # left arm
     (6, 8), (8, 10),                           # right arm
